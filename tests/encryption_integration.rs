@@ -1,11 +1,11 @@
 use axum::{
+    Router,
     body::Body,
     http::{Request, StatusCode},
     routing::post,
-    Router,
 };
 use http_body_util::BodyExt;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use tower::ServiceExt;
 
 fn app() -> Router {

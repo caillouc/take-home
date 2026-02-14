@@ -8,16 +8,17 @@ use crate::crypto::hmac::HMacSigner;
 use crate::crypto::signer::Signer;
 
 static SIGNER: LazyLock<HMacSigner> = LazyLock::new(|| {
-    HMacSigner::new(b"shared-secret-key".to_vec())
+    let key = std::env::var("HMAC_SECRET").expect("HMAC_SECRET environment variable must be set");
+    HMacSigner::new(key.into_bytes())
 });
 
-pub async fn sign(Json(payload): Json<Value>) -> Json<Value> {
+pub async fn sign(Json(payload): Json<Value>) -> Result<Json<Value>, StatusCode> {
     match payload {
         Value::Object(map) => {
             let signature = SIGNER.sign(&map);
-            Json(json!({ "signature": signature }))
+            Ok(Json(json!({ "signature": signature })))
         }
-        _ => Json(json!({ "error": "expected a JSON object" })),
+        _ => Err(StatusCode::BAD_REQUEST),
     }
 }
 

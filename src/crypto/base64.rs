@@ -1,23 +1,24 @@
-use base64::engine::general_purpose::STANDARD;
 use base64::Engine as _;
+use base64::engine::general_purpose::STANDARD;
 use serde_json::Value;
 
 use super::encryptor::Encryptor;
 
+#[derive(Default)]
 pub struct Base64Encryptor;
 
 impl Base64Encryptor {
-	pub fn new() -> Self {
-		Self
-	}
+    pub fn new() -> Self {
+        Self
+    }
 }
 
 impl Encryptor for Base64Encryptor {
-	fn encrypt(&self, value: &Value) -> Value {
-		let bytes = serde_json::to_vec(value).unwrap_or_default();
-		let encoded = STANDARD.encode(bytes);
-		Value::String(encoded)
-	}
+    fn encrypt(&self, value: &Value) -> Value {
+        let bytes = serde_json::to_vec(value).expect("failed to serialize JSON value");
+        let encoded = STANDARD.encode(bytes);
+        Value::String(encoded)
+    }
 
     fn decrypt(&self, value: &Value) -> Option<Value> {
         if let Value::String(s) = value {

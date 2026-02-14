@@ -1,11 +1,11 @@
 use axum::{
+    Router,
     body::Body,
     http::{Request, StatusCode},
     routing::post,
-    Router,
 };
 use http_body_util::BodyExt;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use tower::ServiceExt;
 
 fn app() -> Router {
@@ -40,9 +40,17 @@ async fn sign_returns_200() {
 #[tokio::test]
 async fn sign_returns_signature_property() {
     // README: Output is a JSON payload with a unique "signature" property
-    let (_, body) = post_json(app(), "/sign", json!({"message": "Hello World", "timestamp": 1616161616})).await;
+    let (_, body) = post_json(
+        app(),
+        "/sign",
+        json!({"message": "Hello World", "timestamp": 1616161616}),
+    )
+    .await;
     let body = body.expect("response should be valid JSON");
-    assert!(body.get("signature").is_some(), "response must contain a 'signature' property");
+    assert!(
+        body.get("signature").is_some(),
+        "response must contain a 'signature' property"
+    );
     assert!(body["signature"].is_string(), "signature must be a string");
 }
 
@@ -65,7 +73,10 @@ async fn sign_property_order_does_not_affect_signature() {
 
     let sig_a = body_a.unwrap()["signature"].as_str().unwrap().to_string();
     let sig_b = body_b.unwrap()["signature"].as_str().unwrap().to_string();
-    assert_eq!(sig_a, sig_b, "signature must be the same regardless of property order");
+    assert_eq!(
+        sig_a, sig_b,
+        "signature must be the same regardless of property order"
+    );
 }
 
 #[tokio::test]
@@ -75,7 +86,10 @@ async fn sign_different_payloads_produce_different_signatures() {
 
     let sig_a = body_a.unwrap()["signature"].as_str().unwrap().to_string();
     let sig_b = body_b.unwrap()["signature"].as_str().unwrap().to_string();
-    assert_ne!(sig_a, sig_b, "different payloads must produce different signatures");
+    assert_ne!(
+        sig_a, sig_b,
+        "different payloads must produce different signatures"
+    );
 }
 
 #[tokio::test]
@@ -97,7 +111,10 @@ async fn verify_valid_signature_returns_204() {
     // README: HTTP 204 (No Content) if signature is valid
     let payload = json!({"message": "Hello World", "timestamp": 1616161616});
     let (_, sign_body) = post_json(app(), "/sign", payload.clone()).await;
-    let signature = sign_body.unwrap()["signature"].as_str().unwrap().to_string();
+    let signature = sign_body.unwrap()["signature"]
+        .as_str()
+        .unwrap()
+        .to_string();
 
     let (status, _) = post_json(
         app(),
@@ -117,7 +134,10 @@ async fn verify_valid_signature_with_reordered_data_returns_204() {
         json!({"message": "Hello World", "timestamp": 1616161616}),
     )
     .await;
-    let signature = sign_body.unwrap()["signature"].as_str().unwrap().to_string();
+    let signature = sign_body.unwrap()["signature"]
+        .as_str()
+        .unwrap()
+        .to_string();
 
     // Verify with properties in different order
     let (status, _) = post_json(
@@ -141,7 +161,10 @@ async fn verify_tampered_payload_returns_400() {
         json!({"message": "Hello World", "timestamp": 1616161616}),
     )
     .await;
-    let signature = sign_body.unwrap()["signature"].as_str().unwrap().to_string();
+    let signature = sign_body.unwrap()["signature"]
+        .as_str()
+        .unwrap()
+        .to_string();
 
     let (status, _) = post_json(
         app(),
@@ -159,7 +182,10 @@ async fn verify_tampered_payload_returns_400() {
 async fn verify_tampered_signature_returns_400() {
     let payload = json!({"message": "Hello World", "timestamp": 1616161616});
     let (_, sign_body) = post_json(app(), "/sign", payload.clone()).await;
-    let mut signature = sign_body.unwrap()["signature"].as_str().unwrap().to_string();
+    let mut signature = sign_body.unwrap()["signature"]
+        .as_str()
+        .unwrap()
+        .to_string();
 
     // Tamper with the signature
     let last = signature.pop().unwrap();
@@ -176,23 +202,13 @@ async fn verify_tampered_signature_returns_400() {
 
 #[tokio::test]
 async fn verify_missing_signature_returns_400() {
-    let (status, _) = post_json(
-        app(),
-        "/verify",
-        json!({"data": {"message": "Hello"}}),
-    )
-    .await;
+    let (status, _) = post_json(app(), "/verify", json!({"data": {"message": "Hello"}})).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
 }
 
 #[tokio::test]
 async fn verify_missing_data_returns_400() {
-    let (status, _) = post_json(
-        app(),
-        "/verify",
-        json!({"signature": "abc123"}),
-    )
-    .await;
+    let (status, _) = post_json(app(), "/verify", json!({"signature": "abc123"})).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
 }
 
@@ -220,7 +236,10 @@ async fn sign_then_verify_roundtrip() {
     });
 
     let (_, sign_body) = post_json(app(), "/sign", payload.clone()).await;
-    let signature = sign_body.unwrap()["signature"].as_str().unwrap().to_string();
+    let signature = sign_body.unwrap()["signature"]
+        .as_str()
+        .unwrap()
+        .to_string();
 
     let (status, _) = post_json(
         app(),
@@ -239,7 +258,10 @@ async fn sign_then_verify_roundtrip_with_nested_values() {
     });
 
     let (_, sign_body) = post_json(app(), "/sign", payload.clone()).await;
-    let signature = sign_body.unwrap()["signature"].as_str().unwrap().to_string();
+    let signature = sign_body.unwrap()["signature"]
+        .as_str()
+        .unwrap()
+        .to_string();
 
     let (status, _) = post_json(
         app(),

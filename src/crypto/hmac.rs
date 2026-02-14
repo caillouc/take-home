@@ -15,8 +15,18 @@ impl HMacSigner {
 }
 
 impl HMacSigner {
+    /// Builds a deterministic string from a JSON object by sorting entries
+    /// alphabetically by key.
+    ///
+    /// NOTE: Nested object values are serialized using `serde_json`'s `Display`,
+    /// whose key order depends on insertion order (not sorted). This means two
+    /// objects that are semantically identical but have differently-ordered nested
+    /// keys would produce different signatures. Because the API operates at
+    /// depth 1 (same as `/encrypt`), this is acceptable for the current scope.
+    /// A recursive canonicalization (sorting keys at every depth) would remove
+    /// this limitation if deeper guarantees were needed.
     fn map_to_string(&self, map: &Map<String, Value>) -> String {
-        let mut to_sign: Vec<String> = map.iter().map(|(k, v)| format!("{}={};", k, v)).collect();
+        let mut to_sign: Vec<String> = map.iter().map(|(k, v)| format!("{k}={v};")).collect();
         to_sign.sort();
         to_sign.join("")
     }
@@ -56,7 +66,7 @@ impl Signer for HMacSigner {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::{json, Map, Value};
+    use serde_json::{Map, Value, json};
 
     fn make_signer() -> HMacSigner {
         HMacSigner::new(b"super-secret-key".to_vec())

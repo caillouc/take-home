@@ -1,5 +1,98 @@
 # Riot Take-Home Technical Challenge
 
+## Getting Started
+
+### Prerequisites
+
+No local Rust installation is required — a **Dockerfile** is provided.  
+You only need [Docker](https://docs.docker.com/get-docker/) installed.
+
+If you prefer running natively, you need **Rust 1.85+** (edition 2024).
+
+### Environment Variables
+
+| Variable      | Description                        | Default     |
+|---------------|------------------------------------|-------------|
+| `HMAC_SECRET` | Secret key used for HMAC signing   | *(required)* |
+| `PORT`        | Port the server listens on         | `3000`      |
+
+### Run with Docker
+
+```bash
+# Build the image
+docker build -t take-home .
+
+# Run the server
+docker run --rm -p 3000:3000 -e HMAC_SECRET="my-secret-key" take-home
+```
+
+The API is now available at `http://localhost:3000`.
+
+### Run Tests with Docker
+
+```bash
+docker run --rm -e HMAC_SECRET="test-secret" \
+  $(docker build -q --target builder .) \
+  cargo test
+```
+
+### Run Locally (without Docker)
+
+```bash
+# Run the server
+HMAC_SECRET="my-secret-key" cargo run
+
+# Run all tests (unit + integration)
+HMAC_SECRET="my-secret-key" cargo test
+```
+
+### Example Requests
+
+```bash
+# Encrypt
+curl -s -X POST http://localhost:3000/encrypt \
+  -H "Content-Type: application/json" \
+  -d '{"name": "John Doe", "age": 30}'
+
+# Decrypt (use the output from /encrypt)
+curl -s -X POST http://localhost:3000/decrypt \
+  -H "Content-Type: application/json" \
+  -d '{"name": "IkpvaG4gRG9lIg==", "age": "MzA="}'
+
+# Sign
+curl -s -X POST http://localhost:3000/sign \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Hello World", "timestamp": 1616161616}'
+
+# Verify (use the signature from /sign)
+curl -s -X POST http://localhost:3000/verify \
+  -H "Content-Type: application/json" \
+  -d '{"signature": "<signature_from_sign>", "data": {"message": "Hello World", "timestamp": 1616161616}}'
+```
+
+### Project Structure
+
+```
+src/
+├── main.rs                  # Server entrypoint & routing
+├── lib.rs                   # Public module exports
+├── crypto/
+│   ├── encryptor.rs         # Encryptor trait (abstraction)
+│   ├── base64.rs            # Base64 implementation of Encryptor
+│   ├── signer.rs            # Signer trait (abstraction)
+│   └── hmac.rs              # HMAC-SHA256 implementation of Signer
+└── handlers/
+    ├── encryption.rs        # /encrypt & /decrypt handlers
+    └── signing.rs           # /sign & /verify handlers
+tests/
+├── encryption_integration.rs
+└── signing_integration.rs
+```
+
+---
+
+## Original Instructions
+
 ## Overview
 
 This challenge requires you to build an HTTP API with 4 endpoints that handle JSON payloads for encryption, decryption, signing, and verification operations.
